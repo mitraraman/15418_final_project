@@ -23,37 +23,37 @@
 <div style="padding-top: 1em;"><a href="index.html">Main Project Page</a></div>
 
 <div class="section">Summary</div>
- We plan on implementing the database operations PROJECT, SELECT, and JOIN by using relational algebra on GPU machines in order to investigate the viability of accelerating a database on GPU. We will use memsql on a multi-core CPU as reference.
-
+ We want to analyze the performance of implementing some database operations on a GPU versus a CPU. Since each operation can be expensive based on the size of the database and the number of disk accesses the operation requires, we believe that we can significantly speed up each operation by changing how and where the database tuples are stored, and how we access the tuples. We plan on implementing the database operations PROJECT, SELECT, and JOIN by using relational algebra on GPU machines in order to investigate the viability of accelerating a database on GPU. We will use MemSQL on a multi-core CPU as reference for analyzing the performance of our GPU version.
 
 <div class="section">Background</div>
-As all of us know, the traditional database performance is bad (since access to disk is really slow), so here comes Memsql. Memsql places data into memory and translates SQL into C++ for the utmost optimization in query execution, which enables Memsql to write and read data at incredible speeds. <br /><br />
-But we might not satisfy the speed of the limited number of CPU cores provide to us. For certain types of queries, tuples are highly independent each other, which has high potential to benefit from parallelism. Specifically, if we can have one thread to work on each tuple simultaneously, the performance of large volume of data could be largely promoted. <br /> <br />
-So our project is to push the bar even higher. We like in-memory database, and we also want an even faster way to ingest large volumes of data, so we would try to put the data into GPU’s memory and utilize the huge computation power of GPU.
+The database operations of PROJECT, SELECT, and JOIN have a very poor traditional performance. Each of these operations require at least one disk acccess, and each disk access is extremely slow in the current architecture. This is where MemSQL comes in. MemSQL places data directly into a memory system and translates SQL statements into C++ for the utmost optimization in query execution, which enables Memsql to write and read data at incredible speeds compared to reading and writing data from the disk. <br /><br />
+However, the speedup can vary depending on the number of CPU cores provided to us. For certain types of queries, the tuples that are being accessed are highly independent each other so they have high potential to benefit from parallelism. Specifically, we can implement each thread to work on each tuple simultaneously and the performance of computing a large volume of data would be largely promoted. <br /> <br />
+Our project is to enhance the performance even more. To do this, we need to implement an in-memory database and an even faster way to ingest large volumes of data. Since GPUs have larger memory, we plan to store the data in the GPU's memory and utilize the GPU's high computation power.
 
 <div class="section">Challenge</div>
-Utilize the memory hierarchy of GPU to make memory access more efficient in GPU ( global , shared, register )<br /><br />
-One possible challenge is the potential of divergence. For example, a tuple might have many attributes. Some attributes of some certain tuples might satisfy a user-defined predicate while other do not. In this case, divergence appears, and some threads could be idle for a long time while a few threads are super busy working on the qualified tuples.<br /><br />
-We want to learn what types of query makes GPU-based database viable
+The biggest challenge will be to figure out how best to utilize the memory hierarchy of the GPU to make memory accesses more efficient (i.e. choosing between global, shared, and register variables).<br /><br />
+Another challenge with this implementation is the potential of divergence. For example, a tuple might have many attributes, where some attributes of certain tuples might satisfy a user-defined predicate while others will not. In this case divergence appears, so some threads could be idle for a long time while a few the threads will be super busy working on the qualified tuples.<br /><br />
+Additionally, this implementation faces the problem of maintaining work-load balance among the threads. Since we cannot break down a single query into multiple queries, we must figure out a way to preemptively assign SQL queries to threads in order to maintain a moderate work-load balance throughout.<br /><br />
+A further challenge is to learn what types of queries make a GPU-based database viable. After much research, testing, and analysis, we should be able to solve this issue and optimize the implementation based on these queries. However, it will be a challenge to come to this conclusion and make the correct optimizations.
 
 <div class="section">Resources</div>
+Our three main resources are listed below in no level of importance. They each serve separate yet important purposes. The CUDA starter code that we will use from Assignment 2 is extremely important in helping us get started and understand the nuances of CUDA programming. We need to analyze the small semantics of the code that were not the focus of Assignment 2 but are imperative to functional CUDA programming. MemSQL is the backbone of our entire project, since we cannot execute the project idea and analyze our results without a functional and dependable referral source. Also, we can use MemSQL as a reference for how to implement the GPU version of the database. Thirdly, we are basing most of our algorithmic approach off of the research paper listed below. This paper was developed by four students from Georgia Institute of Technology and one researcher from NVIDIA. The paper details the problems with standard SQL database queries, a relational algebraic approach to speeding up the queries, and implementation of the algorithms with data structures on GPU. Although this paper details much of the algorithms that we plan to use in our implementation, we must perform even more analysis and fine-tuning of the algorithms to better serve our purpose.<br /><br />
 <ul>
-	<li>The basic setup of code will be based on assignment (set up cuda)</li>
-	<li>memsql </li>
-	<li>research paper about relational algebra in gpu from caltech</li>
+	<li>CUDA setup code, based off of Assignment 2 starter code</li>
+	<li>MemSQL</li>
+	<li>"Efficient Relational Algebra Algorithms and Data Structures for GPU", NVIDIA Research & Georgia Institute of Technology</li>
 </ul>
 
 <div class="section">Goals/Deliverables</div>
-PLAN TO ACHIEVE
-Successfully implement PROJECT and SELECT in cuda, benchmarking on it and compare it to the performance on memsql<br /><br />
-HOPE TO ACHIEVE
-implement JOIN operation. It is the least efficient operation in relational database. The performance of such operation in GPU could be very an interesting point of this project. <br /><br />
-EXPECTED PERFORMANCE
-compared with memsql, we got decent speed up( 2X or 3X , too specific?)
+<u>PLAN TO ACHIEVE</u><br />
+We would like to successfully implement both PROJECT and SELECT operations in CUDA, and analyze and compare their results to their performances on MemSQL.<br /><br />
+<u>HOPE TO ACHIEVE</u><br />
+If we can complete implementations for PROJECT and SELECT, we would like to implement the JOIN operation. This the least efficient operation in the current relational database architecture, so we feel that it will be difficult to improve the performance of this operation on GPU. However, if we are able to complete the implementation for JOIN, it will give us very interesting analysis to apply to the overall performance of the GPU compared to the traditional database structure.<br /><br />
+<u>EXPECTED PERFORMANCE</u><br />
+By comparing the performance of the operations on GPU with MemSQL, we plan to get a decent speed up of 2x-3x for all operations. However, these speedups are not very specific and cannot be guaranteed.
 
 <div class="section">Platform</div>
-We have lots of tuples, GPU has lots of cores. 
-Not specifically for cuda, we choose it because we used it before
+Since we are using GPU instead of CPUs, we will have access to all of the GPU's cores as well as its memory which will hold lots of tuples (to mock a database). This implementation is not specifically for CUDA, but we chose it because it is the most familiar language for us to use on GPU.
 
 <div class="section">Proposed Schedule</div>
 <p>

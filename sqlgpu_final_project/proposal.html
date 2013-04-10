@@ -1,0 +1,77 @@
+<html>
+<head>
+<title>CMU 15-418/618 (Spring 2013) Final Project Proposal</title>
+
+<link rel="stylesheet" type="text/css" href="style.css">
+
+</head>
+<body>
+
+<div class="constrainedWidth">
+  
+<div style="padding-bottom: 10px;">
+<div class="title smallTitle">Project Proposal:</div>
+<div class="title" style="width: 900px; padding-bottom: 6px; border-bottom: #000000 2px solid;">
+  SQL on GPU with Efficient Relational Algebra Algorithms
+</div>
+</div>
+
+<div class="boldText">
+<div>Yingchao Liu (yingchal) and Mitra Raman (mitrar)</div>
+</div>
+
+<div style="padding-top: 1em;"><a href="index.html">Main Project Page</a></div>
+
+<div class="section">Summary</div>
+ We plan on implementing the database operations PROJECT, SELECT, and JOIN by using relational algebra on GPU machines in order to investigate the viability of accelerating a database on GPU. We will use memsql on a multi-core CPU as reference.
+
+
+<div class="section">Background</div>
+As all of us know, the traditional database performance is bad (since access to disk is really slow), so here comes Memsql. Memsql places data into memory and translates SQL into C++ for the utmost optimization in query execution, which enables Memsql to write and read data at incredible speeds. <br /><br />
+But we might not satisfy the speed of the limited number of CPU cores provide to us. For certain types of queries, tuples are highly independent each other, which has high potential to benefit from parallelism. Specifically, if we can have one thread to work on each tuple simultaneously, the performance of large volume of data could be largely promoted. <br /> <br />
+So our project is to push the bar even higher. We like in-memory database, and we also want an even faster way to ingest large volumes of data, so we would try to put the data into GPU’s memory and utilize the huge computation power of GPU.
+
+<div class="section">Challenge</div>
+Utilize the memory hierarchy of GPU to make memory access more efficient in GPU ( global , shared, register )<br /><br />
+One possible challenge is the potential of divergence. For example, a tuple might have many attributes. Some attributes of some certain tuples might satisfy a user-defined predicate while other do not. In this case, divergence appears, and some threads could be idle for a long time while a few threads are super busy working on the qualified tuples.<br /><br />
+We want to learn what types of query makes GPU-based database viable
+
+<div class="section">Resources</div>
+<ul>
+	<li>The basic setup of code will be based on assignment (set up cuda)</li>
+	<li>memsql </li>
+	<li>research paper about relational algebra in gpu from caltech</li>
+</ul>
+
+<div class="section">Goals/Deliverables</div>
+PLAN TO ACHIEVE
+Successfully implement PROJECT and SELECT in cuda, benchmarking on it and compare it to the performance on memsql<br /><br />
+HOPE TO ACHIEVE
+implement JOIN operation. It is the least efficient operation in relational database. The performance of such operation in GPU could be very an interesting point of this project. <br /><br />
+EXPECTED PERFORMANCE
+compared with memsql, we got decent speed up( 2X or 3X , too specific?)
+
+<div class="section">Platform</div>
+We have lots of tuples, GPU has lots of cores. 
+Not specifically for cuda, we choose it because we used it before
+
+<div class="section">Proposed Schedule</div>
+<p>
+<table class="projectSchedule">
+<tr>
+  <td width="110"><span style="font-weight: bold;">Week</span></td>
+  <td width="380"><span style="font-weight: bold;">What We Plan To Do</span></td>
+</tr>
+<tr><td>Apr 9-12</td><td>Download MemSQL and load 2-3 GB of testing data into MemSQL</td></tr>
+<tr><td>Apr 13-18</td><td>Setup the CUDA program and finalize teh relational algebra algorithms that we will be using for each operation.</td></tr>
+<tr><td>Apr 19-26</td><td>Get the first iteration of the program working for the PROJECT operation and begin work on SELECT and JOIN operations. Present this working version for the checkpoint.</td></tr>
+<tr><td>Apr 27-May2</td><td>Finalize the algorithm for PROJECT and performance analysis. Finish working on SELECT.</td></tr>
+<tr><td>May 3-9</td><td>Finish working on JOIN and have performance analysis for all operations completed.</td></tr>
+<tr><td>May 10-13</td><td>Finish any remaining program tweaks and performance analysis. Compile the final report and presentation.</td></tr>
+</table>
+</p>
+
+</div>
+
+</body>
+</html>

@@ -13,15 +13,196 @@
 
 <div class="title smallTitle">Checkpoint Report:</div>
 <div class="title" style="width: 900px; padding-bottom: 6px; border-bottom: #000000 2px solid;">
-  [PROJECT TITLE HERE]
+  SQL on GPU with Efficient Relational Algebra Algorithms
 </div>
 </div>
 
 <div style="padding-top: 1em;"><a href="index.html">Main Project Page</a></div>
 
-<p class="comment">[Your checkpoint writeup goes here.]</p>
+	<div class="section">Updated Working Scheule</div>
+	<p>
+		<table class="projectSchedule">
+			<tr>
+			  <td width="110"><span style="font-weight: bold;">Week</span></td>
+			  <td width="380"><span style="font-weight: bold;">What We Plan To Do</span></td>
+			  <td><span style="font-weight: bold;">What We Actually Did</span></td>
+			</tr>
+			<tr>
+				<td>Apr 9-12</td>
+				<td>Download MemSQL and load 2-3 GB of testing data into MemSQL</td>
+				<td>Downloaded MemSQL, did further research on the problem, and defined the scope and deliverables of the project.</td>
+			</tr>
+			<tr>
+				<td>Apr 13-18</td>
+				<td>Setup the CUDA program and finalize the relational algebra algorithms that we will be using for each operation.</td>
+				<td>Setup the CUDA program and finalize the relational algebra algorithms that we will be using for each operation. Also, we altered our project goals and deliverables after further research and discussion with TAs.</td>
+			</tr>
+			<tr>
+				<td>Apr 19-26</td>
+				<td>Get the first iteration of the program working for the PROJECT operation and begin work on SELECT and JOIN operations. Present this working version for the checkpoint.</td>
+				<td>Implemented SELECT on the GPU using CUDA and conducted performance analysis against the sequential version of SELECT on the CPU. Also, we found a scan operation that would work with large amounts of data on the GPU. We discussed the next steps to take in order to find valid and useful information for this project.</td>
+			</tr>
+			<tr>
+				<td>Apr 27-May 2</td>
+				<td>Finalize the algorithm for PROJECT and performance analysis. Finish working on SELECT.</td>
+				<td>TBA</td>
+			</tr>
+			<tr>
+				<td>May 3-9</td>
+				<td>Finish working on JOIN and have performance analysis for all operations completed.</td>
+				<td>TBA</td>
+			</tr>
+			<tr>
+				<td>May 10-13</td>
+				<td>Finish any remaining program tweaks and performance analysis. Compile the final report and presentation.</td>
+				<td>TBA</td>
+			</tr>
+		</table>
+	</p>
 
+	<div class="section">Work Completed So Far</div>
+	<p>
+		We met with our TA mentor, Alex, to discuss the details of our project and our possible deliverables. He suggested that we add more complexity to the project as it does not seem challenging enough. We decided to focus on creating a working implementation of SELECT on the GPU before proceeding in order to figure out how doable each operation actually was. We were able to implement SELECT for simple queries on the GPU and found that the the performance was much faster than the sequential version on the CPU. However, with the overhead of transferring memory back and forth between the CPU and the GPU, the parallelized GPU version ran at around the same speed as the serialized CPU version with the same level of bandwidth. Now, we are considering:
+		<ul>
+			<li>Ways to lower the overhead or make other operations within the program faster</li>
+			<li>Where to store the database and what storage methods will be most realistic</li>
+			<li>Whether to implement more difficult SELECT queries and how feasible this will actually be</li>
+		</ul>
+	</p>
 
+	<div class="section">Updated Goals</div>
+	<p>
+		Our goals from the proposal are mostly the same, but we have altered a few of our expected achievements to more accurately reflect the new scope of the project and what we think is reasonable. <br /> <br />
+<u>PLAN TO ACHIEVE</u><br />
+<ul>
+	<li>Successful implementations of SELECT, PROJECT, and JOIN on GPU</li>
+	<li>Parallel implementations of the above stated queries on CPU</li>
+	<li>Preliminary implementation of a co-processing algorithm that uses both CPU and GPU for queries</li>
+</ul>
+<br /><br />
+<u>HOPE TO ACHIEVE</u><br />
+If we are able to complete an implementation of a co-processing algorithm, we hope to have time to optimize this algorithm. The main concerns that we are prepared to face are minimizing or hiding overhead, determining a good balance between CPU and GPU for certain queries, and significantly improving the performance from singular GPU or CPU implementations.
+<br /><br />
+</p>
+
+	<div class="section">Preliminary Results</div>
+	<p>
+		Displayed below are our results from running SELECT queries of varying number of tuples on the CPU and the GPU. We measured the time of running the sequential version of the program on CPU against the parallelized version of the program on GPU. Additionally, we found the times of running the program on the GPU with and without the overhead by measuring just the kernel computation.<br />
+
+		<img src="select_overall_chart.png" />
+		<br /><br />
+		<table class="projectSchedule">
+			<tr>
+				<td><span style="font-weight: bold;">Relation Size (in thousands)</td>
+				<td><span style="font-weight: bold;">Overall GPU Time (in ms)</td>
+				<td><span style="font-weight: bold;">GPU Kernel Time (in ms)</td>
+				<td><span style="font-weight: bold;">Overall CPU Time (in ms)</td>
+			</tr>
+			<tr>
+				<td>1.024</td>
+				<td>54.054</td>
+				<td>0.197</td>
+				<td>0.005</td>
+			</tr>
+			<tr>
+				<td>32.768</td>
+				<td>50.188</td>
+				<td>0.157</td>
+				<td>0.198</td>
+			</tr>
+			<tr>
+				<td>1048.576</td>
+				<td>59.177</td>
+				<td>0.816</td>
+				<td>5.887</td>
+			</tr>
+			<tr>
+				<td>4000</td>
+				<td>65.899</td>
+				<td>2.019</td>
+				<td>21.027</td>
+			</tr>
+			<tr>
+				<td>8000</td>
+				<td>84.463</td>
+				<td>3.658</td>
+				<td>42.173</td>
+			</tr>
+			<tr>
+				<td>16000</td>
+				<td>108.897</td>
+				<td>6.94</td>
+				<td>83.769</td>
+			</tr>
+			<tr>
+				<td>20000</td>
+				<td>126.956</td>
+				<td>8.572</td>
+				<td>105.036</td>
+			</tr>
+		</table>
+	<br /><br /><br />
+	We also measured and compared the throughput of each of the implementations shown in the graph above.<br />
+
+	<img src="select_throughput_chart.png" />
+		<br /><br />
+		<table class="projectSchedule">
+			<tr>
+				<td><span style="font-weight: bold;">Relation Size (in thousands)</td>
+				<td><span style="font-weight: bold;">Overall GPU Throughput (in GB/s)</td>
+				<td><span style="font-weight: bold;">GPU Kernel Throughput (in GB/s)</td>
+				<td><span style="font-weight: bold;">Overall CPU Throughput (in GB/s)</td>
+			</tr>
+			<tr>
+				<td>1.024</td>
+				<td>0.000</td>
+				<td>0.039</td>
+				<td>1.47</td>
+			</tr>
+			<tr>
+				<td>32.768</td>
+				<td>0.005</td>
+				<td>1.555</td>
+				<td>1.235</td>
+			</tr>
+			<tr>
+				<td>1048.576</td>
+				<td>0.132</td>
+				<td>9.571</td>
+				<td>1.327</td>
+			</tr>
+			<tr>
+				<td>4000</td>
+				<td>0.452</td>
+				<td>14.761</td>
+				<td>1.417</td>
+			</tr>
+			<tr>
+				<td>8000</td>
+				<td>0.706</td>
+				<td>16.292</td>
+				<td>1.413</td>
+			</tr>
+			<tr>
+				<td>16000</td>
+				<td>1.095</td>
+				<td>17.178</td>
+				<td>1.423</td>
+			</tr>
+			<tr>
+				<td>20000</td>
+				<td>1.174</td>
+				<td>17.383</td>
+				<td>1.419</td>
+			</tr>
+		</table>
+	</p>
+
+	<div class="section">Issues of Concern</div>
+	<p>
+		We are still unsure about the scope of this project and how to make it challenging and interesting enough for final deliverables. After speaking with TAs, we chose to modify our initial plan and implement SELECT, PROJECT, and JOIN within reasonable time. However, after our preliminary results, we are not positive that choosing to parallelize CPU and GPU alone will give us the best results. Since we are both relatively new to this topic, we are continuing to do research as we develop our project which is making it more difficult to stay with the proposed schedule.<br /><br />
+		We also have issues with where and how to store our database, and the level of complexity of queries we should test with. Firstly, we are currently storing an extremely simple database on the CPU and transferring memory to the GPU for every execution of the program. This is generating a lot of overhead and is hurting the performance. However, since the memory on GPU is very limited we cannot store the entire database there. We are tyring to figure out the best possible method to store the database to get the most realistic and best times. Secondly, the queries that we are currently testing with for SELECT are very simple. We are searching the entire database for tuples conditioned on only one value. Since SQL queries have multiple levels of complexity, we are debating as to what level of complexity we should test with our implementation. One thing holding us back from exploring more complex queries is the difficulty involved in including these queries in our programs. We believe that it is beyond the scope of our project to include more complex queries so are choosing to stay with simple queries. However, this could skew our final results.
+	</p>
 
 </div>
 

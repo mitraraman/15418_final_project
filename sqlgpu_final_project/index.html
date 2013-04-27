@@ -12,12 +12,13 @@
 <div style="padding-bottom: 10px;">
 <div class="title smallTitle">CMU 15-418/618 (Spring 2013) Final Project:</div>
 <div class="title" style="width: 900px; padding-bottom: 6px; border-bottom: #000000 2px solid;">
-  [PROJECT TITLE HERE]
+  SQL on GPU with Efficient Relational Algebra Algorithms
 </div>
 </div>
 
 <div class="boldText">
-<div>[YOUR NAMES HERE]</div>
+<div>Yingchao Liu (yingchal)<br />
+Mitra Raman (mitrar)</div>
 </div>
 
 <div class="section">Reports</div>
@@ -37,21 +38,25 @@
   <td width="380"><span style="font-weight: bold;">What We Plan To Do</span></td>
   <td><span style="font-weight: bold;">What We Actually Did</span></td>
 </tr>
-<tr><td>Apr 1-7</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-<tr><td>Apr 8-14</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-<tr><td>Apr 15-21</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-<tr><td>Apr 22-28</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-<tr><td>Apr 29-May 5</td><td>&nbsp;</td><td>&nbsp;</td></tr>
-<tr><td>May 6-11</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>Apr 9-12</td><td>Download MemSQL and load 2-3 GB of testing data into MemSQL</td><td>Downloaded MemSQL, did further research on the problem, and defined the scope and deliverables of the project.</td></tr>
+<tr><td>Apr 13-18</td><td>Setup the CUDA program and finalize the relational algebra algorithms that we will be using for each operation.</td><td>Setup the CUDA program and finalize the relational algebra algorithms that we will be using for each operation. Also, we altered our project goals and deliverables after further research and discussion with TAs.</td></tr>
+<tr><td>Apr 19-26</td><td>Get the first iteration of the program working for the PROJECT operation and begin work on SELECT and JOIN operations. Present this working version for the checkpoint.</td><td>Implemented SELECT on the GPU using CUDA and conducted performance analysis against the sequential version of SELECT on the CPU. Also, we found a scan operation that would work with large amounts of data on the GPU. We discussed the next steps to take in order to find valid and useful information for this project.</td></tr>
+<tr><td>Apr 27-May 2</td><td>Finalize the algorithm for PROJECT and performance analysis. Finish working on SELECT.</td><td>TBA</td></tr>
+<tr><td>May 3-9</td><td>Finish working on JOIN and have performance analysis for all operations completed.</td><td>TBA</td></tr>
+<tr><td>May 10-13</td><td>Finish any remaining program tweaks and performance analysis. Compile the final report and presentation.</td><td>TBA</td></tr>
 </table>
 </p>
 
 <div class="section">Working Log</div>
 
-<p class="comment">[Keep a log of work you have done here.  You may
-wish to list optimizations you tried, what failed, etc.  Or you can
-just rant. Keeping a good log will make it easy to put together your
-final writeup.]</p>
+<p>
+We met with our TA mentor, Alex, to discuss the details of our project and our possible deliverables. He suggested that we add more complexity to the project as it does not seem challenging enough. We decided to focus on creating a working implementation of SELECT on the GPU before proceeding in order to figure out how doable each operation actually was. We were able to implement SELECT for simple queries on the GPU and found that the operation implementation itself was not very difficult and the performance was much faster than the sequential version on the CPU. However, with the overhead of transferring memory back and forth between the CPU and the GPU, the parallelized GPU version ran at around the same speed as the serialized CPU version with the same level of bandwidth. Now, we are considering:
+<ul>
+	<li>Ways to lower the overhead or make other operations within the program faster</li>
+	<li>Where to store the database and what storage methods will be most realistic</li>
+	<li>Whether to implement more difficult SELECT queries and how feasible this will actually be</li>
+</ul>
+</p>
 </div>
 
 </div>

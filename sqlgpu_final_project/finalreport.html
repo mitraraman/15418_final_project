@@ -63,7 +63,48 @@ The JOIN operation is quite similar on the CPU, but instead of implementing a bi
 
 <div class="section">Results</div>
 
-<p>IN THE PROCESS</p>
+<p>Here are the results from JOIN operation executed on CPU and GPU. We executed JOIN on the GPU with CUDA, on the GPU using CUDA kernels, and on the CPU using a single thread. We display the speed for the queries on different sizes of tables.<br /><br />
+<b>All Results:</b><br />
+<img src="join_all.png" />
+<br /><br />
+<b>GPU with CUDA:</b>
+<br />
+<img src="join_gpu.png" />
+<br /><br />
+<b>GPU with CUDA Kernels:</b>
+<br />
+<img src="join_cuda_kernel.png" />
+<br /><br />
+<b>CPU with Single Thread:</b>
+<br />
+<img src="join_cpu.png" />
+<br /><br /><br />
+
+Here are the results from SELECT operation executed on CPU and GPU. We executed SELECT on the GPU with CUDA, on the GPU using CUDA kernels, on the GPU using streams, on the CPU using a single thread, and on the CPU implementing SIMD and tasks. We display the speed for the queries on different query sizes.<br /><br />
+<b>All Results:</b><br />
+<img src="select_all.png" />
+<br /><br />
+<b>GPU with CUDA:</b>
+<br />
+<img src="select_gpu.png" />
+<br /><br />
+<b>GPU with CUDA Kernels:</b>
+<br />
+<img src="select_cuda_kernel.png" />
+<br /><br />
+<b>GPU with Streams:</b>
+<br />
+<img src="select_streams.png" />
+<br /><br />
+<b>CPU with Single Thread:</b>
+<br />
+<img src="select_cpu.png" />
+<br /><br />
+<b>CPU with SIMD and Tasks:</b>
+<br />
+<img src="select_simd_tasks.png" />
+
+</p>
 
 <div class="section">References</div>
 

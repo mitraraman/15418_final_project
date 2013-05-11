@@ -68,7 +68,7 @@ We assume we are working on sorted tuples, the paper is using binary search for 
 <b>All Results (y-axis: size of two relations eg. 2^23 tuples join 2^10 tuples, x-aixs: execution time(ms) ):</b><br />
 <img src="join_all.png" />
 <br /><br />
-<b>GPU with CUDA: (y-axis: execution time(ms), x-axis: number of tuples of two relations)</b>
+<b>GPU with CUDA plus data transfer: (y-axis: execution time(ms), x-axis: number of tuples of two relations)</b>
 <br />
 <img src="join_gpu.png" />
 <br /><br />
@@ -85,7 +85,7 @@ Here are the results from SELECT operation executed on CPU and GPU. We executed 
 <b>All Results: (y-axis: number of tuples in the relation, we scale by 3 to show the effect from STREAM, x-aix: execution time(ms))</b><br />
 <img src="select_all.png" />
 <br /><br />
-<b>GPU with CUDA: (y-axis: execution time(ms), x-axis: number of tuples)</b>
+<b>GPU with CUDA plus data transfer: (y-axis: execution time(ms), x-axis: number of tuples)</b>
 <br />
 <img src="select_gpu.png" />
 <br /><br />

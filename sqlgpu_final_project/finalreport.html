@@ -2,35 +2,46 @@
 <head>
 <title>CMU 15-418/618 (Spring 2013) Final Project</title>
 
-<link rel="stylesheet" type="text/css" href="style.css">
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/jquery-1.6.1.min.js"><\/script>')</script>
+
+    <script src="js/jquery.smoothscroll.js"></script>
+    <script src="js/jquery.nivo.slider.pack.js"></script>
+    <script src="js/jquery.easing-1.3.pack.js"></script>
+    <script src="js/jquery.fancybox-1.3.4.pack.js"></script>
 
 </head>
 <body>
 
-<div class="constrainedWidth">
-  
-<div style="padding-bottom: 10px;">
+<div id="header-wrap">
+	<header>
+		<div id="title">
+			<h1>SQL on GPU with Efficient <br />Relational Algebra Algorithms</h1>
+			
+		</div>
 
-<div style="padding-bottom: 10px;">
-<div class="title smallTitle">CMU 15-418/618 (Spring 2013) Final Project Report</div>
-<div class="title" style="width: 900px; padding-bottom: 6px; border-bottom: #000000 2px solid;">
-  SQL on GPU with Efficient Relational Algebra Algorithms
+	        <div id="myNavigation" class="pageScrollerNav">
+            <ul>
+                <li><a href="#">Summary</a></li>
+                <li><a href="#">Background</a></li>
+                <li><a href="#">Approach</a></li>
+                <li><a href="#">Execution</a></li>
+                <li><a href="#">Results</a></li>
+                <li><a href="#">References</a></li>
+            </ul>
+        </div>
+	</header>
 </div>
-</div>
 
-<div class="boldText">
-<div>Yingchao Liu (yinghcal) & Mitra Raman (mitrar)</div>
-</div>
-
-<div style="padding-top: 1em;"><a href="index.html">Main Project Page</a></div>
-<p><a href="proposal.html">Original Project Proposal</a></p>
-<p><a href="checkpoint.html">Checkpoint Report</a></p>
-
-<div class="section">Project Summary</div>
-
+<div id="wrapper">
+<div class="section" id="summary">
+<br /><br /><br /><br /><h2>Project Summary</h2>
 <p> We want to analyze the performance of implementing some database operations on a GPU versus a CPU. We have implemented the relational algebra operations SELECT and JOIN on GPU to simulate the relational database queries in order to investigate the viability of accelerating a database on GPU. To do a fair game when analyzing the performances on GPU and CPU, we also plan to implement a fairly optimized corresponding operations by using openMP and SIMD , and we have implemented sequential versions of the operations on the multi-core CPU machines to validate the results as well.</p>
+</div>
 
-<div class="section">Background</div>
+<div class="section" id="background">
+<br /><br /><br /><br />	<h2>Background</h2>
 
 <p>
 Relational algebra is a procedural query language, which consists of a set of operations that take one or two relations as input and produce a new relation as their result. The fundamental operations are: select, project, union, and set difference. Operators in relational algebra are not necessarily the same as SQL operators, even if they have the same name. For example, the SELECT statement exists in SQL, and also exists in relational algebra. These two uses of SELECT are not the same. The DBMS must take whatever SQL statements the user types in and translate them into relational algebra operations before applying them to the database.
@@ -46,68 +57,78 @@ On the CPU, we implemeneted a simple serial version as well as an OpenMP version
 <br /><br />
 The JOIN operation is quite similar on the CPU, but instead of implementing a binary search for finding tuples within the bounds, we brute force the search for the tuples in the second table. The brute force algorithm has a better performance time than O(M) for every search, where M is the size of the second table, because we take advantage of the fact that the table is sorted. Then, we are able to directly merge the tuples into the output buffer rather than keeping track of the result sizes for each thread. However, when implementing JOIN on the CPU using OpenMP, we must utilize the threads for efficient parallelism. This algorithm is similar to the JOIN operation algorithm on the GPU, except for it once again uses a brute force search method rather than a binary search. The reason we chose two different search methods was that binary search has relatively good performance on the GPU as compared to all other search methods, whereas brute force proved to be the best for the CPU.
 </p>
+</div>
 
-<div class="section">Approach</div>
-<img src="select_algo.png" align="middle"/>
-<img src="stream.png" align="middle"/>
+<div class="section" id="approach">
+<br /><br /><br /><br />	<h2>Algorithm & Approach</h2>
+<img src="images/select_algo.png" align="middle"/>
+<img src="images/stream.png" align="middle"/>
 <p> The SELECT operation is prety straight forward, and it based on the graph above.
 The main overhead is from transferring data, but not that much. we try to explore the potential of hiding the latency by setting up cuda stream. We set up three cuda streams, while stream 0 is doing the computation, stream 1 is transferring data from host to device, stream 2 is transferring data from device to host. So the data transfer bottleneck would be somehow hidden by pipelining.However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden. </p>
 
-<img src="join_algo.png" />
+<img src="images/join_algo.png" />
 <p>The JOIN operation is the most complicated algorithm, it is further complicated by the merge stage of the algorithm, which involves identifying subsets of the partitioned relations with overlapping attributes and performing the cross product for each subset. This presents a significant problem to parallel implementations of the algorithm that eventually write to a statically allocated, dense array. 
 
 We assume we are working on sorted tuples, the paper is using binary search for each block to find out lower bound and upper bound, which is really inefficient in GPU. We implement p-nary search based on the paper and tweak it for our case. The original p-nary algorithm tries to use all of threads cross blocks to find out the matching, and in our case, we only use all of threads inside one block to find out the boundaries for this block. Besides, p-nary outputs the items that match, but if there is duplication in the buffer, there is no guaranteed which one p-nary search will output. So, we makes two versions of p-nary search, one for searching for lower_bound, where we only keep result that has lower index and one for upper_bound, where we only keeps result that has larger index. The reason we do this is to make sure the correctness of join that no tuple is left.
 </p>
 
 
+</div>
 
+<div class="section" id="execution">
+<br /><br /><br /><br />	<h2>Execution & Optimization</h2>
+</div>
 
-<div class="section">Results</div>
+<div class="section" id="results">
+<br /><br /><br /><br />	<h2>Results & Analysis</h2>
 
 <p>Here are the results from JOIN operation executed on CPU and GPU. We executed JOIN on the GPU with CUDA, on the GPU using CUDA kernels, and on the CPU using a single thread. We display the speed for the queries on different sizes of tables.<br /><br />
 <b>All Results (y-axis: size of two relations eg. 2^23 tuples join 2^10 tuples, x-aixs: execution time(ms) ):</b><br />
-<img src="join_all.png" />
+<img src="images/join_all.png" />
 <br /><br />
 <b>GPU with CUDA plus data transfer: (y-axis: execution time(ms), x-axis: number of tuples of two relations)</b>
 <br />
-<img src="join_gpu.png" />
+<img src="images/join_gpu.png" />
 <br /><br />
 <b>GPU with CUDA Kernels: (y-axis: execution time(ms), x-axis: number of tuples of two relations)</b>
 <br />
-<img src="join_cuda_kernel.png" />
+<img src="images/join_cuda_kernel.png" />
 <br /><br />
 <b>CPU with Single Thread: (y-axis: execution time(ms), x-axis: number of tuples of two relations)</b>
 <br />
-<img src="join_cpu.png" />
+<img src="images/join_cpu.png" />
 <br /><br /><br />
 
 Here are the results from SELECT operation executed on CPU and GPU. We executed SELECT on the GPU with CUDA, on the GPU using CUDA kernels, on the GPU using streams, on the CPU using a single thread, and on the CPU implementing SIMD and tasks. We display the speed for the queries on different query sizes.<br /><br />
 <b>All Results: (y-axis: number of tuples in the relation, we scale by 3 to show the effect from STREAM, x-aix: execution time(ms))</b><br />
-<img src="select_all.png" />
+<img src="images/select_all.png" />
 <br /><br />
 <b>GPU with CUDA plus data transfer: (y-axis: execution time(ms), x-axis: number of tuples)</b>
 <br />
-<img src="select_gpu.png" />
+<img src="images/select_gpu.png" />
 <br /><br />
 <b>GPU with CUDA Kernels:  (y-axis: execution time(ms), x-axis: number of tuples)</b>
 <br />
-<img src="select_cuda_kernel.png" />
+<img src="images/select_cuda_kernel.png" />
 <br /><br />
 <b>GPU with Streams:  (y-axis: execution time(ms), x-axis: number of tuples)</b>
 <br />
-<img src="select_streams.png" />
+<img src="images/select_streams.png" />
 <br /><br />
 <b>CPU with Single Thread:  (y-axis: execution time(ms), x-axis: number of tuples)</b>
 <br />
-<img src="select_cpu.png" />
+<img src="images/select_cpu.png" />
 <br /><br />
 <b>CPU with SIMD and Tasks:  (y-axis: execution time(ms), x-axis: number of tuples)</b>
 <br />
-<img src="select_simd_tasks.png" />
+<img src="images/select_simd_tasks.png" />
 
 </p>
+</div>
 
-<div class="section">References</div>
+<div class="section" id="references">
+<br /><br /><br /><br />
+	<h2>References & Division of Work</h2>
 
 <p>
 	<ul>
@@ -116,11 +137,36 @@ Here are the results from SELECT operation executed on CPU and GPU. We executed 
 	</ul>
 </p>
 
-<div class="section">List of Work By Each Student</div>
+
+	<h2>List of Work By Each Student</h2>
 
 <p>IN THE PROCESS</p>
+</div>
+
+<footer>
+<div class="footer-content">
+	<p class="footer-text">Yingchao Liu (yingchal) & Mitra Raman (mitrar)</p>
+        <ul class="footer-menu">
+            <li><a href="index.html">Main Project Page</a></li>
+            <li><a href="proposal.html">Project Proposal</a></li>
+            <li><a href="checkpoint.html">Project Checkpoint</a></li>
+        </ul>
+    </div>
+</footer>
 
 </div>
+
+</div>
+
+<script type="text/javascript" src="js/jquery.pagescroller.js"></script>
+
+<script>
+  $('#wrapper').pageScroller({
+    sectionClass: 'section',
+    navigation: '#myNavigation',
+  });
+
+</script>
 
 </body>
 </html>

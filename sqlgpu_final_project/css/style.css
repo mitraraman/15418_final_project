@@ -238,6 +238,13 @@ footer {
     margin-top: 150px;
 }
 
+img{
+    margin-right: auto;
+    margin-left: auto;
+    width: 600px;
+    text-align: center;
+}
+
 /* -------------------------------------------
     Header
 -------------------------------------------- */

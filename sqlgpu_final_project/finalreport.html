@@ -36,8 +36,8 @@
 
 <div id="wrapper">
 <div class="section" id="summary">
-<br /><br /><br /><br /><h2>Summary - MITRA</h2>
-<p> We want to analyze the performance of implementing some database operations on a GPU versus a CPU. We have implemented the relational algebra operations SELECT and JOIN on GPU to simulate the relational database queries in order to investigate the viability of accelerating a database on GPU. To do a fair game when analyzing the performances on GPU and CPU, we also plan to implement a fairly optimized corresponding operations by using openMP and SIMD , and we have implemented sequential versions of the operations on the multi-core CPU machines to validate the results as well.</p>
+<br /><br /><br /><br /><h2>Summary</h2>
+<p> We want to analyze the performance of implementing some database operations on a GPU versus a CPU. We have chosen to implement the relational algebra operations SELECT and JOIN on a GPU to simulate the relational database queries in order to investigate the viability of accelerating a database on GPU. To fairly analyze the performances on GPU and CPU, we also plan to implement a fairly optimized corresponding operations by using openMP and SIMD , and we have implemented sequential versions of the operations on the multi-core CPU machines to validate the results as well.</p>
 </div>
 
 <div class="section" id="background">
@@ -180,8 +180,49 @@ We assume we are working on sorted tuples, the paper is using binary search for 
 
 	<h2>Division of Work</h2>
 	<h3>Yingchao Liu</h3>
+	<h4>Research</h4>
+	<ul>
+		<li>Found several research papers regarding database operations on GPU</li>
+		<li>Researched the use and benefit of MemSQL</li>
+		<li>Researched algorithms for SELECT and JOIN</li>
+		<li>Researched the use of streams and other possible optimizations</li>
+	</ul>
+	<h4>Implementation</h4>
+	<ul>
+		<li>initial CUDA program of SELECT</li>
+		<li>SELECT optimization using streams</li>
+		<li>SELECT optimization using CUDA kernels</li>
+		<li>SELECT optimization using SIMD</li>
+		<li>initial sequential program of SELECT</li>
+		<li>initial CUDA program of JOIN</li>
+	</ul>
+	<h4>Write-Up & Analysis</h4>
+	<ul>
+		<li>Gathered data on speedups for each implementation</li>
+	</ul>
 	<br />
+
 	<h3>Mitra Raman</h3>
+	<h4>Research</h4>
+	<ul>
+		<li>Read papers regarding database operations on GPU and CPU</li>
+		<li>Researched and downloaded MemSQL to test the possible usage</li>
+		<li>Researched implementations of SELECT and JOIN algorithms</li>
+		<li>Researched possible optimizations for sequential versions using OpenMP</li>
+	</ul>
+	<h4>Implementation</h4>
+	<ul>
+		<li>SELECT optimization using OpenMP</li>
+		<li>initial sequential program of JOIN</li>
+	</ul>
+	<h4>Write-Up & Analysis</h4>
+	<ul>
+		<li>Created graphs for each implementation, showing speedup vs. table size</li>
+		<li>Compared speedup and performance of implementations for SELECT and JOIN</li>
+		<li>Performed analysis on CPU vs GPU for SELECT and JOIN</li>
+		<li>Created and designed final project webpage (this one!)</li>
+		<li>Updated project schedule</li>
+	</ul>
 </div>
 
 <footer>

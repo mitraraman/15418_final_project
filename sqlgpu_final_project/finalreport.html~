@@ -1,0 +1,286 @@
+<html>
+<head>
+<title>CMU 15-418/618 (Spring 2013) Final Project</title>
+
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.6/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="js/jquery-1.6.1.min.js"><\/script>')</script>
+
+    <script src="js/jquery.smoothscroll.js"></script>
+    <script src="js/jquery.nivo.slider.pack.js"></script>
+    <script src="js/jquery.easing-1.3.pack.js"></script>
+    <script src="js/jquery.fancybox-1.3.4.pack.js"></script>
+
+</head>
+<body>
+
+<div id="header-wrap">
+	<header>
+		<div id="title">
+			<h1>SQL on GPU with Efficient <br />Relational Algebra Algorithms</h1>
+			
+		</div>
+
+	        <div id="myNavigation" class="pageScrollerNav">
+            <ul>
+                <li><a href="#">Summary</a></li>
+                <li><a href="#">Background</a></li>
+                <li><a href="#">Approach</a></li>
+                <li><a href="#">Execution</a></li>
+                <li><a href="#">Results</a></li>
+                <li><a href="#">References</a></li>
+            </ul>
+        </div>
+	</header>
+</div>
+
+<div id="wrapper">
+<div class="section" id="summary">
+<br /><br /><br /><br /><h2>Summary</h2>
+<p>We want to analyze the performance of implementing database operations on a GPU versus a CPU. We have chosen to implement the relational algebra operations SELECT and JOIN on a GPU to simulate the relational database queries in order to investigate the viability of accelerating a database on GPU. To fairly analyze the performances on GPU and CPU, we have implemented fairly optimized corresponding operations by using SIMD, and we have implemented sequential versions of the operations on the multi-core CPU machines to validate the results as well.</p>
+</div>
+
+<div class="section" id="background">
+<br /><br /><br /><br />	
+<h2>Background</h2>
+<h3>SQL as Relational Algebra</h3>
+<p>Relational algebra is a procedural query language, which consists of a set of operations that take one or two relations as input and produce a new relation as their result. The fundamental operations in relational algebra are: select, project, union, and set difference. SQL is a superset of relational algebra, so it is relationally complete which means that the language can perform all basic and meaningful operations on relations through relational algebra. Operators in relational algebra are not necessarily the same as SQL operators, even if they have the same name. For example, the SELECT statement exists in SQL, and also exists in relational algebra. These two uses of SELECT are not the same. The DBMS must take whatever SQL statements the user types in and translate them into relational algebra operations before applying them to the database. SQL statements are given to parsers that convert the queries into equivalent relational algebra expressions. For instance, this SQL query<br /><br />
+<img src="images/sqlquery.png" /><br /><br />
+is equivalent to the following relational algebra expression<br /><br />
+<img src="images/relalg.png" /> <br /> <br />
+</p>
+<h3>SELECT and JOIN on a GPU and a CPU</h3>
+<p>To implement SELECT and JOIN, we referred to several papers that have been written about translating SQL queries into relational algebra. We wanted to efficiently use the computation power and memory space of the GPU and CPU, respectively, so we enhacned the algorithms of each of the operations. Each operation is run on several threads on the GPU, so the algorithms require quick division and merging of the tables. On the CPU, we wanted to execute the queries sequentially and with some parallelism through various techniques we have learned throughout the course such as OpenMP and SIMD parallelism. We initially considered memory transfer of the data between the CPU and GPU as part of our implementations, which would require some usage of MemSQL to efficiently store the tables in memory. However, more research showed that memory transfer times can vary based on the machine that is in use, so we chose to eliminate this part of in our implementations of the queries.</p>
+
+<h3>HW + SW Information</h3>
+<p>
+	We are executing the relational algebra operations on a GTX 480s GPU and on a quad-core CPU. These machines were readily available to us through the CMU computers, and we found it best to use them for testing purposes. Although there are other machines that will give better performance and are more optimal, we chose not to switch over machines in the middle of our project. The programs are written in CUDA on the GPU and in C++ on the CPU.
+</p>
+<br />
+
+</div>
+
+<div class="section" id="approach">
+<br /><br /><br /><br />
+<h2>Algorithm & Approach</h2>
+
+<h3>General Approach</h3>
+No matter which operation is implemented in GPU, there are three general stages that the algorithms follow:
+<ul>
+<li>Stage 1: Partition tuples into blocks of threads</li>
+<li>Stage 2: Mapping tuples based on predicate and generate histogram cross blocks</li>
+<li>Stage 3: Gather resulting tuples into condensed buffer based on histogram</li>
+</ul>
+The actual implementations implement these three stages but vary in the number of CUDA kernels used to achieve the goals of each stage. For instance, JOIN needs three kernels to make the histogram ready while SELECT only needs one. There are more implementation details in the "Execution & Optimization" section.
+<br /><br />
+<h3>Table and Tuple Data Structures</h3>
+We decided not to store actual tables in an in-memory database because the GPU memory is limited, and we wanted to be able to store large tables. So, we wanted to store the tables and tuples in an efficient and simple data structure to simplify the implementation given the project scope. Each relational table is stored as an array, where each tuple has either two or three data entries of integers. For instance, when a relational table, or array, has multiple columns, each tuple is stored as an int2* or int3* in CUDA. By storing the tuples as integer values, we were easily able to compare tuple values which was important when finding qualifying tuples for SELECT queries and to merge tuples for JOIN queries.
+<br /><br />
+<h3>SELECT Operation</h3> The GPU takes in the input table and splits it into blocks of tuples, assigning tuples to threads in each block. Each thread then performs the "select" operation on the tuples and reports whether the tuple is a match for the query. If it is a match, the thread stores a 1 in a match_index_array at the tuple's index. The GPU then applies prefix sum to each block, which counts the number of qualifying tuples in the block and stores the tuples in the block's condensed buffer. The sizes of the condensed buffers are then translated as the "result size" for each block. Next, the GPU performs a prefix sum of the result sizes and creates a histogram from which it maps the qualifying tuples to the final condensed output buffer. <br /><br />
+<img src="images/select_algo.png"/><br /><br />
+In addition to executing one query at a time on the GPU, we added an additional implementation of SELECT which supported streams of queries. The streams allowed for a pipelining effect so that the GPU could receive and execute multiple queries at a faster rate than executing queries one at a time. Our hope was that this would help hide the overhead of computation and the bottleneck that arises from the GPU-startup and disk accesses. Below is an image depicting the SELECT algorithm from the GPU as taken from the academic paper, <a href="">"Efficient Relational Algebra Algorithms and Data Structures for GPU"</a>.<br /><br />
+
+On the CPU, we implemeneted a simple serial version as well as a parallel version that uses SIMD instructions to improve performance. We felt that it was fair to compare a parallelized implementation on the CPU to a parallelized implementation on the GPU to accurately measure better performance of the operations. The CPU version uses all four cores on the machine by placing pertinent blocks of code in parallel for loops. Each thread checks tuples from the table to see if they are qualifying, and then follows a similar algorithm as in the GPU by performing a prefix sum on the matching indeces of the tuples. This allows for maximum parallelism on the CPU using SIMD.
+<br /><br />
+<h3>JOIN Operation</h3> 
+The JOIN operation is the most complicated algorithm for SQL operations, and it is further complicated by the merge stage of the algorithm which involves identifying subsets of the partitioned relations with overlapping attributes and performing the cross product for each subset. This presents a significant problem to parallel implementations of the algorithm that eventually writes to a statically allocated, dense array. <br /><br />
+
+To improve the efficiency of the algorithm, we first sort the tuples in each table. Similar to the algorithm for SELECT, the GPU then splits up one table into similar sized blocks, and assigns threads to tuples within each block. We then find tuples in the second table that fall in the bounds of each block by performing a p-nary search algorithm on the second table. Once the number of possible matching tuples is computed by multiplying the number of matching tuples in each table, we perform a prefix sum operation on the number of tuples within each block which gives us an upper bound for the total number of qualifying tuples from the query. We then merge each tuple within each block with its respective matching tuples from the second table, and place each joined tuple into the block's condensend output buffer. This gives us the "result size" of each block, and we perform another prefix sum on the result sizes to create a histogram of the final result. Each block then merges their qualifying tuples into the final condensed output buffer.<br /><br />
+<img src="images/join_algo.png" class="alg" />
+<br /><br />
+The JOIN operation is quite similar on the CPU as on the GPU. One difference from the algorithm for SELECT is that we must find matching tuples from a second table for each tuple in the first table. To do this, we have tried two matching algorithms: binary search (as in the GPU version) and brute force. In brute force, each tuple from the outer relation goes through the entire inner relation, which gives O(M) time for every search, where M is the size of the inner relation. In binary search, it is O(logM) for every search. Since we want utilize the fact that the relations are already sorted, binary search outperforms the brute force algorithm. Once we find the matching tuples for each tuple in the first table, we perform the merging operation and input the joined tuples directly into the output buffer. Since the CPU executes the JOIN queries using a single thread, we did not need to implement prefix sum or the use of histograms to find the solution. 
+<br /><br />
+
+<br />
+
+</div>
+
+<div class="section" id="execution">
+<br /><br /><br /><br />
+<h2>Execution & Optimization</h2>
+<h3>SELECT on GPU</h3>
+<h4>General CUDA Implementation</h4><br /><br />
+
+We use 512 threads per block and maximumly 65535 * 65535 blocks.
+There are three CUDA kernels used for SELECT, and they are partition, exclusive scan and coalesced. The most difficult part is to have a efficient implementation of exclusive scan that can apply to large number of elements across blocks. For the prefix sum in the partition kernel, we adopt the shared memory exclusive scan we used in assignment 2. For prefix sum acorss blocks, we have tried several existing implementation thrust library and scanLargeArray example in CUDA SDK. Thrust implementation is the easiest to use and quite fast, but thrust's exclusive scan can not be used in streaming. scanLargeArray can apply to super large array, but it is quite complicated to use it in streamming. Therefore, we end up implementing our own version exclusive scan that can apply to relatively large array.      
+
+<h4>Optimization By Using Streams</h4>
+<<<<<<< HEAD
+<img src="images/stream1.png"/><br />
+The main overhead is from transferring data between the host and device, becuase it is really slow.In general, there are two approaches can be used to deal with this issue: data compression and pipelining. Data compression actually reduces the latency by reducing amoung of data to transfer while pipelining hides the latency by doing computation and transfer simultaneously. For our project, We try to explore the potential of hiding the latency by setting up CUDA stream, because our implementation already simplifies the structure of relations as we mentioned in the data structure section, and pipelining seems a more intersting way to investigate. 
+=======
+<img src="images/stream1.png" /><br />
+The main overhead is from transferring data between the host and the device, becuase it is really slow. In general, there are two approaches can be used to deal with this issue: data compression and pipelining. Data compression actually reduces the latency by reducing amoung of data to transfer while pipelining hides the latency by doing computation and transfer simultaneously. For our project, We try to explore the potential of hiding the latency by setting up CUDA stream, because our implementation already simplifies the structure of relations as we mentioned in the data structure section, and pipelining seems a more intersting way to investigate. 
+>>>>>>> bdc30f588c2245544e1f810c804f11612dccb590
+We set up three-way CUDA streams, and enqueue the CUDA operations( kernels, cudaMemcpy etc) into corresponding queues in depth-first way. The resulting execution layout is in Figure(a). While stream 1 is doing the computation, stream 2 is transferring data from host to device, stream 1 is transferring data from device to host. So, in theory, the data transfer bottleneck would be completely hidden by pipelining. However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
+
+<h3>SELECT on CPU</h3>
+<h4>SIMD Implementation</h4><br />
+We implemented two versions of SELECT on CPU: single threaded and SIMD version by using ISPC.
+The single threaded version is used to validate all of the SELECT operations we have implemented in this project. The SIMD version is used to do a fair comparison with the GPU version.
+
+We adopt the similar algorithm used in GPU to implement our SIMD SELECT. It first scatters tuples 
+to each program instance, and each program instance stores the resulting tuples into their private buffer, and then exclusive scan on the number of resultiing tuples that each program instance has, and finally put tuples into the final condensed buffer.  
+
+The actuall performance of this implementation is not as good as we expect, we think the reason is the nature of SELECT operations is quite divergent, which results in unbalanced workload among program instances. Besides, the pattern of access to memory requires gather and scatter ( each program instance does not access memory sequentially), which casuses more performance degradation. 
+<br /><br />
+<h3>JOIN on GPU</h3>
+<h4>General CUDA Implementaiton</h4><br />
+We assume we are working on sorted tuples, the paper is using binary search for each block to find out lower bound and upper bound, which is really inefficient in GPU. We implement p-nary search based on the paper and tweak it for our case. The original p-nary algorithm tries to use all of threads cross blocks to find out the matching, and in our case, we only use all of threads inside one block to find out the boundaries for this block. Besides, p-nary outputs the items that match, but if there is duplication in the buffer, there is no guaranteed which one p-nary search will output. So, we makes two versions of p-nary search, one for searching for lower_bound, where we only keep result that has lower index and one for upper_bound, where we only keeps result that has larger index. The reason we do this is to make sure the correctness of join that no tuple is left.
+<h4>CUDA Kernels</h4><br />
+<br />
+
+<h3>JOIN on CPU</h3>
+<h4>Single Threaded Implementation</h4><br /><br />
+
+<h3>Optimizations</h3>
+<h4>Memory Transfer</h4><br />
+<h4>OpenMP Attempt</h4><br />
+<h4>Streams</h4><br />
+<h4>P-nary Search vs Brute Force</h4>
+
+<h3>Implementation Issues</h3>
+<p>
+There were several issues to consider when implementing these operations. First, the GPU algorithms are theoretically simple but we ran into coherence and atomicity issues when implementing them. The threads needed to update their values in the output buffers in a sorted order to display the qualifying tuples of the query correctly. Second, when implementing parallelism on the CPU, we attempted to use OpenMP since it provided several instructions to help execute parallelism across the tuples for each query. However, we discovered that it wasn't as simple as making the "for" loop in the sequential version a "parallel for" -- we ran into atomicity issues similar as in the GPU version. So, when attempting to execute a similar algorithm on the CPU as on the GPU, we discovered that the speedup actually decreased and was worse than the simple sequential version. 
+</p>
+<br />
+</div>
+
+<div class="section" id="results">
+<br /><br /><br /><br />
+<h2>Results & Analysis</h2>
+<h3>SELECT Operation</h3>
+Here are the results from SELECT operation executed on CPU and GPU. We executed SELECT on the GPU with CUDA with data transfer (specified as CUDA with no streams), without data transfer (specified as CUDA Kernels), on the GPU using streams, on the CPU using a single thread, and on the CPU implementing SIMD and tasks.<br /><br />
+<h4>Performance vs. Table Size</h4>
+<p>
+	These results display the performance speed of each implementation of SELECT on the GPU and CPU on tables with different number of tuples. The time (in milliseconds) is shown on the graph in a logarithmic scale to allow all the data to be represented in the same range.<br /><br /> 
+<img src="images/select_perf.png" class="graph"/>
+</p>
+<h4>Speedup vs. Table Size</h4>
+<p>
+	The results below show the speedup of each implementation from the CPU single threaded version of SELECT. Again, the range of speedup is depicted in a logarithmic scale of milliseconds, and we show the speedup of each implementation against each of the table sizes. 
+	<br /><br />
+<img src="images/select_speedup.png" class="graph"/>
+</p>
+<br />
+
+<h3>JOIN Operation</h3>
+<p>Here are the results from JOIN operation executed on CPU and GPU. We executed JOIN on the GPU with CUDA with data transfer (specified as CUDA general), on the without data transfer (specified as CUDA Kernel), and on the CPU using a single thread.</p><br /><br />
+<h4>Performance vs. Table Sizes</h4>
+<p>
+	The results displayed below show the performance speed of each implementation of JOIN on the GPU and CPU, executed on tables of varying sizes. The time (in milliseconds) is shown on the graph in a logarithmic scale to allow all the data to be represented in the same range.<br /><br />
+<img src="images/join_perf.png" class="graph" />
+</p>	
+
+<h4>Speedup vs. Table Sizes</h4>
+<p>
+	The results displayed below show the speedup of the GPU implementations of JOIN compared to the CPU single threaded implementation. Again, the range of speedup is depicted in a logarithmic scale of milliseconds, and we show the speedup of each implementation against the varying table sizes.<br /><br />
+<img src="images/join_speedup.png" class="graph" />
+</p>
+
+<h3>Analysis</h3>
+<h4>SELECT Operation</h4>
+<p>We can see from the performance and speedup results that the operation on the GPU without data transfer had the best performance and speedup compared to the CPU single threaded version. However, we must realize that data transfer is an essential part of the real implementation so this does not reflect the real-life situation of SELECT queries implemented on the GPU. Given this information, we know that we should consider the costs of data transfer when analyzing the execution times and speedup. This shows that executing SELECT on the GPU with streams or on the CPU with SIMD and tasks parallelization seem to be the next best options when considering performance time. We can see that implementing SELECT in CUDA with streams shows a performance time of 0 for the two smaller table sizes, and we realized that this is because of the table sizes are so small that when executed in parallel on the GPU, it has a very minimal performance time. This is also the reason for the near to none speedup when compared to the CPU single threaded version for the two smaller table sizes. <br /><br />
+
+Implementing SELECT in CUDA without streams performed nearly similar to implementing the operation on the CPU with a single thread because, although the algorithm for executing a single query is highly parallelized, the overhead generated from the computation of executing a query slows down the process when executing several queries. This is why implementing streams in CUDA enhanced the performance and speedup, because we were able to speedup the process of analyzing the query, retreiving the tables, and executing the query in a pipelined fashion.
+</p>
+
+<br />
+
+<h4>JOIN Operation</h4>
+<p>TO DO ASAP!</p>
+<br />
+
+<h3>GPU or CPU?</h3>
+
+WHAT DO WE THINK?!?!
+<p>From our analysis, we have deduced that executing SELECT and JOIN on the GPU or CPU depends on various other factors, although CUDA with streams and CPU with SIMD parallelization are most optimal from our implementations. Even though we were not able to implement JOIN using streams in CUDA, we can see from our results and analysis that this would improve the performance even more from simple CUDA with data transfer included. If we were able to implement JOIN on the CPU using SIMD parallelization, this would probably be similar in performance to CUDA with streams, so we are not able to choose a machine for certain. Also, whether we choose to use CPU or GPU will depend mainly on the size of the tables we are accessing and the complexity of the queries. If the tables are extremely large, then transferring the data from the CPU to the GPU and back may result in a bottleneck effect and slow down the performance. Similarly, if the query is extremely complex, then it would be better to take the data transfer costs because the GPU will be able to execute the query more efficiently. </p>
+</div>
+
+<div class="section" id="references">
+<br /><br /><br /><br />
+	<h2>References & Division of Work</h2>
+
+<p>
+	<ul>
+		<li>"Efficient Relational Algebra Algorithms and Data Structures for GPU"</li>
+		<li>"Parallel Search On Video Cards"</li>
+		<li><a href="http://db.grussell.org/index.html">Database eLearning Website</a></li>
+	</ul>
+</p>
+
+
+	<h2>Division of Work</h2>
+	<h3>Yingchao Liu</h3>
+	<h4>Research</h4>
+	<ul>
+		<li>Found several research papers regarding database operations on GPU</li>
+		<li>Researched the use and benefit of MemSQL</li>
+		<li>Researched algorithms for SELECT and JOIN</li>
+		<li>Researched the use of streams and other possible optimizations</li>
+	</ul>
+	<h4>Implementation</h4>
+	<ul>
+		<li>initial CUDA program of SELECT</li>
+		<li>SELECT optimization using streams</li>
+		<li>SELECT optimization using CUDA kernels</li>
+		<li>SELECT optimization using SIMD</li>
+		<li>initial sequential program of SELECT</li>
+		<li>initial CUDA program of JOIN</li>
+	</ul>
+	<h4>Write-Up & Analysis</h4>
+	<ul>
+		<li>Gathered data on speedups for each implementation</li>
+	</ul>
+	<br />
+
+	<h3>Mitra Raman</h3>
+	<h4>Research</h4>
+	<ul>
+		<li>Read papers regarding database operations on GPU and CPU</li>
+		<li>Researched and downloaded MemSQL to test the possible usage</li>
+		<li>Researched implementations of SELECT and JOIN algorithms</li>
+		<li>Researched possible optimizations for sequential versions using OpenMP</li>
+	</ul>
+	<h4>Implementation</h4>
+	<ul>
+		<li>SELECT optimization using OpenMP</li>
+		<li>initial sequential program of JOIN</li>
+	</ul>
+	<h4>Write-Up & Analysis</h4>
+	<ul>
+		<li>Created graphs for each implementation, showing speedup vs. table size</li>
+		<li>Compared speedup and performance of implementations for SELECT and JOIN</li>
+		<li>Performed analysis on CPU vs GPU for SELECT and JOIN</li>
+		<li>Created and designed final project webpage (this one!)</li>
+		<li>Updated project schedule</li>
+	</ul>
+</div>
+
+<footer>
+<div class="footer-content">
+	<p class="footer-text">Yingchao Liu (yingchal) & Mitra Raman (mitrar)</p>
+        <ul class="footer-menu">
+            <li><a href="index.html">Main Project Page</a></li>
+            <li><a href="proposal.html">Project Proposal</a></li>
+            <li><a href="checkpoint.html">Project Checkpoint</a></li>
+        </ul>
+    </div>
+</footer>
+
+</div>
+
+</div>
+
+<script type="text/javascript" src="js/jquery.pagescroller.js"></script>
+
+<script>
+  $('#wrapper').pageScroller({
+    sectionClass: 'section',
+    navigation: '#myNavigation',
+  });
+
+</script>
+
+</body>
+</html>

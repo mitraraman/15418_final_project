@@ -106,15 +106,21 @@ There are three CUDA kernels used for SELECT, and they are partition, exclusive 
 
 <h4>Optimization By Using Streams</h4>
 <img src="images/stream1.png" /><br />
-The main overhead is from transferring data between the host and device, becuase it is really slow.In general, there are two approaches can be used to deal with this issue: data compression and pipelining. Data compression actually reduces the latency by reducing amoung of data to transfer while pipelining hides the latency by doing computation and transfer simultaneously. For our project, We try to explore the potential of hiding the latency by setting up CUDA stream, because our implementation already simplifies the structure of relations as we mentioned in the data structure section, and pipelining seems a more intersting way to investigate. 
+The main overhead is from transferring data between the host and the device, becuase it is really slow. In general, there are two approaches can be used to deal with this issue: data compression and pipelining. Data compression actually reduces the latency by reducing amoung of data to transfer while pipelining hides the latency by doing computation and transfer simultaneously. For our project, We try to explore the potential of hiding the latency by setting up CUDA stream, because our implementation already simplifies the structure of relations as we mentioned in the data structure section, and pipelining seems a more intersting way to investigate. 
 We set up three-way CUDA streams, and enqueue the CUDA operations( kernels, cudaMemcpy etc) into corresponding queues in depth-first way. The resulting execution layout is in Figure(a). While stream 1 is doing the computation, stream 2 is transferring data from host to device, stream 1 is transferring data from device to host. So, in theory, the data transfer bottleneck would be completely hidden by pipelining. However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
 
 <h3>SELECT on CPU</h3>
-<h4>Single Threaded Implementation</h4><br /><br />
-<h4>SIMD Implementation</h4><br /><br />
+<h4>SIMD Implementation</h4><br />
+We implemented two versions of SELECT on CPU: single threaded and SIMD version by using ISPC.
+The single threaded version is used to validate all of the SELECT operations we have implemented in this project. The SIMD version is used to do a fair comparison with the GPU version.
 
+We adopt the similar algorithm used in GPU to implement our SIMD SELECT. It first scatters tuples 
+to each program instance, and each program instance stores the resulting tuples into their private buffer, and then exclusive scan on the number of resultiing tuples that each program instance has, and finally put tuples into the final condensed buffer.  
+
+The actuall performance of this implementation is not as good as we expect, we think the reason is the nature of SELECT operations is quite divergent, which results in unbalanced workload among program instances. Besides, the pattern of access to memory requires gather and scatter ( each program instance does not access memory sequentially), which casuses more performance degradation. 
+<br /><br />
 <h3>JOIN on GPU</h3>
-<h4>General CUDA Implementaiton</h4><br /><br />
+<h4>General CUDA Implementaiton</h4><br />
 We assume we are working on sorted tuples, the paper is using binary search for each block to find out lower bound and upper bound, which is really inefficient in GPU. We implement p-nary search based on the paper and tweak it for our case. The original p-nary algorithm tries to use all of threads cross blocks to find out the matching, and in our case, we only use all of threads inside one block to find out the boundaries for this block. Besides, p-nary outputs the items that match, but if there is duplication in the buffer, there is no guaranteed which one p-nary search will output. So, we makes two versions of p-nary search, one for searching for lower_bound, where we only keep result that has lower index and one for upper_bound, where we only keeps result that has larger index. The reason we do this is to make sure the correctness of join that no tuple is left.
 <h4>CUDA Kernels</h4><br />
 <br />

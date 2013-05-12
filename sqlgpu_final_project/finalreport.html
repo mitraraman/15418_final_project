@@ -54,7 +54,7 @@ is equivalent to the following relational algebra expression<br /><br />
 
 <h3>HW + SW Information</h3>
 <p>
-	We are executing the relational algebra operations on a GDX 480s GPU and on a quad-core CPU. These machines were readily available to us through the CMU computers, and we found it best to use them for testing purposes. Although there are other machines that will give better performance and are more optimal, we chose not to switch over machines in the middle of our project. The programs are written in CUDA on the GPU and in C++ on the CPU.
+	We are executing the relational algebra operations on a GTX 480s GPU and on a quad-core CPU. These machines were readily available to us through the CMU computers, and we found it best to use them for testing purposes. Although there are other machines that will give better performance and are more optimal, we chose not to switch over machines in the middle of our project. The programs are written in CUDA on the GPU and in C++ on the CPU.
 </p>
 <br />
 
@@ -96,10 +96,13 @@ Since we utilize the fact that the relation is already sorted, binary seatch out
 <h2>Execution & Optimization</h2>
 <h3>SELECT on GPU</h3>
 <h4>General CUDA Implementation</h4><br /><br />
-<h4>CUDA Kernels</h4><br /><br />
-<h4>Using Streams</h4>
-<img src="images/stream.png" /><br />
-The main overhead is from transferring data, but not that much. we try to explore the potential of hiding the latency by setting up cuda stream. We set up three cuda streams, while stream 0 is doing the computation, stream 1 is transferring data from host to device, stream 2 is transferring data from device to host. So the data transfer bottleneck would be somehow hidden by pipelining.However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
+We use 512 threads per block and maximumly 65535 * 65535 blocks.
+There are three CUDA kernels used for SELECT, and they are partition, exclusive scan and coalesced. The most difficult part is to have a efficient implementation of exclusive scan that can apply to large number of elements across blocks. For the prefix sum in the partition kernel, we adopt the shared memory exclusive scan we used in assignment 2. For prefix sum acorss blocks, we have tried several existing implementation thrust library and scanLargeArray example in CUDA SDK. Thrust implementation is the easiest to use and quite fast, but thrust's exclusive scan can not be used in streaming. scanLargeArray can apply to super large array, but it is quite complicated to use it in streamming. Therefore, we end up implementing our own version exclusive scan that can apply to relatively large array.      
+
+<h4>Optimization By Using Streams</h4>
+<img src="images/stream1.png" /><br />
+The main overhead is from transferring data between the host and device, becuase it is really slow.In general, there are two approaches can be used to deal with this issue: data compression and pipelining. Data compression actually reduces the latency by reducing amoung of data to transfer while pipelining hides the latency by doing computation and transfer simultaneously. For our project, We try to explore the potential of hiding the latency by setting up CUDA stream, because our implementation already simplifies the structure of relations as we mentioned in the data structure section, and pipelining seems a more intersting way to investigate. 
+We set up three-way CUDA streams, and enqueue the CUDA operations( kernels, cudaMemcpy etc) into corresponding queues in depth-first way. The resulting execution layout is in Figure(a). While stream 1 is doing the computation, stream 2 is transferring data from host to device, stream 1 is transferring data from device to host. So, in theory, the data transfer bottleneck would be completely hidden by pipelining. However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
 
 <h3>SELECT on CPU</h3>
 <h4>Single Threaded Implementation</h4><br /><br />

@@ -54,7 +54,7 @@ is equivalent to the following relational algebra expression<br /><br />
 
 <h3>HW + SW Information</h3>
 <p>
-	We are executing the relational algebra operations on a GDX 480s GPU and on a quad-core CPU. These machines were readily available to us through the CMU computers, and we found it best to use them for testing purposes. Although there are other machines that will give better performance and are more optimal, we chose not to switch over machines in the middle of our project. The programs are written in CUDA on the GPU and in C++ on the CPU.
+	We are executing the relational algebra operations on a GTX 480s GPU and on a quad-core CPU. These machines were readily available to us through the CMU computers, and we found it best to use them for testing purposes. Although there are other machines that will give better performance and are more optimal, we chose not to switch over machines in the middle of our project. The programs are written in CUDA on the GPU and in C++ on the CPU.
 </p>
 <br />
 
@@ -78,8 +78,8 @@ We decided not to store actual tables in an in-memory database because the GPU m
 <br /><br />
 <h3>SELECT Operation</h3> The GPU takes in the input table and splits it into blocks of tuples, assigning tuples to threads in each block. Each thread then performs the "select" operation on the tuples and reports whether the tuple is a match for the query. If it is a match, the thread stores a 1 in a match_index_array at the tuple's index. The GPU then applies prefix sum to each block, which counts the number of qualifying tuples in the block and stores the tuples in the block's condensed buffer. The sizes of the condensed buffers are then translated as the "result size" for each block. Next, the GPU performs a prefix sum of the result sizes and creates a histogram from which it maps the qualifying tuples to the final condensed output buffer. <br /><br />
 <img src="images/select_algo.png" /><br /><br />
-In addition to executing one query at a time on the GPU, we added an additional implementation of SELECT which supported streams of queries. The streams allowed for a pipelining effect so that the GPU could receive and execute multiple queries at a faster rate than executing queries one at a time. Our hope was that this would help hide the overhead of computation and the bottleneck that arises from the GPU-startup and disk accesses. Below is an image depicting the SELECT algorithm from the GPU as taken from the academic paper, <a href="">"Efficient Relational Algebra Algorithms and Data Structures for GPU"</a>.<br />
-<img src="images/stream.png" /><br />
+In addition to executing one query at a time on the GPU, we added an additional implementation of SELECT which supported streams of queries. The streams allowed for a pipelining effect so that the GPU could receive and execute multiple queries at a faster rate than executing queries one at a time. Our hope was that this would help hide the overhead of computation and the bottleneck that arises from the GPU-startup and disk accesses. Below is an image depicting the SELECT algorithm from the GPU as taken from the academic paper, <a href="">"Efficient Relational Algebra Algorithms and Data Structures for GPU"</a>.<br /><br />
+
 On the CPU, we implemeneted a simple serial version as well as a parallel version that uses SIMD instructions to improve performance. We felt that it was fair to compare a parallelized implementation on the CPU to a parallelized implementation on the GPU to accurately measure better performance of the operations. The CPU version uses all four cores on the machine by placing pertinent blocks of code in parallel for loops. Each thread checks tuples from the table to see if they are qualifying, and then follows a similar algorithm as in the GPU by performing a prefix sum on the matching indeces of the tuples. This allows for maximum parallelism on the CPU using SIMD.
 <br /><br />
 <h3>JOIN Operation</h3> 
@@ -100,10 +100,14 @@ The JOIN operation is quite similar on the CPU as on the GPU. One difference fro
 <h2>Execution & Optimization</h2>
 <h3>SELECT on GPU</h3>
 <h4>General CUDA Implementation</h4><br /><br />
-<h4>CUDA Kernels</h4><br /><br />
-<h4>Using Streams</h4>
 
-The main overhead is from transferring data, but not that much. we try to explore the potential of hiding the latency by setting up cuda stream. We set up three cuda streams, while stream 0 is doing the computation, stream 1 is transferring data from host to device, stream 2 is transferring data from device to host. So the data transfer bottleneck would be somehow hidden by pipelining.However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
+We use 512 threads per block and maximumly 65535 * 65535 blocks.
+There are three CUDA kernels used for SELECT, and they are partition, exclusive scan and coalesced. The most difficult part is to have a efficient implementation of exclusive scan that can apply to large number of elements across blocks. For the prefix sum in the partition kernel, we adopt the shared memory exclusive scan we used in assignment 2. For prefix sum acorss blocks, we have tried several existing implementation thrust library and scanLargeArray example in CUDA SDK. Thrust implementation is the easiest to use and quite fast, but thrust's exclusive scan can not be used in streaming. scanLargeArray can apply to super large array, but it is quite complicated to use it in streamming. Therefore, we end up implementing our own version exclusive scan that can apply to relatively large array.      
+
+<h4>Optimization By Using Streams</h4>
+<img src="images/stream1.png" /><br />
+The main overhead is from transferring data between the host and device, becuase it is really slow.In general, there are two approaches can be used to deal with this issue: data compression and pipelining. Data compression actually reduces the latency by reducing amoung of data to transfer while pipelining hides the latency by doing computation and transfer simultaneously. For our project, We try to explore the potential of hiding the latency by setting up CUDA stream, because our implementation already simplifies the structure of relations as we mentioned in the data structure section, and pipelining seems a more intersting way to investigate. 
+We set up three-way CUDA streams, and enqueue the CUDA operations( kernels, cudaMemcpy etc) into corresponding queues in depth-first way. The resulting execution layout is in Figure(a). While stream 1 is doing the computation, stream 2 is transferring data from host to device, stream 1 is transferring data from device to host. So, in theory, the data transfer bottleneck would be completely hidden by pipelining. However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
 
 <h3>SELECT on CPU</h3>
 <h4>Single Threaded Implementation</h4><br /><br />

@@ -65,26 +65,27 @@ is equivalent to the following relational algebra expression<br /><br />
 <h2>Algorithm & Approach</h2>
 
 <h3>General Approach</h3>
-No matter which operation is implemented in GPU, the general algorithm is similar, and there are three stages:
+No matter which operation is implemented in GPU, there are three general stages that the algorithms follow:
 <ul>
-<li>stage 1: Partition tuples into blocks of threads</li>
-<li>stage 2: Mapping tuples based on predicate and generate histogram cross blocks</li>
-<li>stage 3: Gather resulting tuples into condensed buffer based on histogram</li>
+<li>Stage 1: Partition tuples into blocks of threads</li>
+<li>Stage 2: Mapping tuples based on predicate and generate histogram cross blocks</li>
+<li>Stage 3: Gather resulting tuples into condensed buffer based on histogram</li>
 </ul>
-The actual implementations are around these 3 stages, but vary on the number of cuda kernels to achieve the goal of each stage. eg. JOIN needs three kernels to make histogram ready while SELECT only needs one. There are more implementation details in the optimization section.
+The actual implementations implement these three stages but vary in the number of CUDA kernels used to achieve the goals of each stage. For instance, JOIN needs three kernels to make the histogram ready while SELECT only needs one. There are more implementation details in the "Execution & Optimization" section.
 <br /><br />
-<h3>SELECT Operation</h3> The GPU takes in the input table and divides the tuples among the available worker threads. Each thread then performs the "select" operation on each tuple and reports whether the tuple is a match for the query by storing a 1 in a match_index_array at the appropriate index. The GPU then counts the qualifying tuples under each thread and reports the "result size" for each thread. Next, the GPU performs a prefix sum of the result sizes and creates a histogram from which it maps the qualifying tuples to the output buffer. In addition to executing one query at a time on the GPU, we added an additional implementation of SELECT which supported streams of queries. Our hope was that this would help hide the overhead of computation and the bottleneck that arises from the GPU-startup and disk accesses. Below is an image depicting the SELECT algorithm from the GPU as taken from the academic paper, <a href="">"Efficient Relational Algebra Algorithms and Data Structures for GPU"</a>.<br /><br />
-<img src="images/select_algo.png" /><br />
+<h3>SELECT Operation</h3> The GPU takes in the input table and splits it into blocks of tuples, assigning tuples to threads in each block. Each thread then performs the "select" operation on the tuples and reports whether the tuple is a match for the query. If it is a match, the thread stores a 1 in a match_index_array at the tuple's index. The GPU then applies prefix sum to each block, which counts the number of qualifying tuples in the block and stores the tuples in the block's condensed buffer. The sizes of the condensed buffers are then translated as the "result size" for each block. Next, the GPU performs a prefix sum of the result sizes and creates a histogram from which it maps the qualifying tuples to the final condensed output buffer. <br /><br />
+<img src="images/select_algo.png" /><br /><br />
+In addition to executing one query at a time on the GPU, we added an additional implementation of SELECT which supported streams of queries. The streams allowed for a pipelining effect so that the GPU could receive and execute multiple queries at a faster rate than executing queries one at a time. Our hope was that this would help hide the overhead of computation and the bottleneck that arises from the GPU-startup and disk accesses. Below is an image depicting the SELECT algorithm from the GPU as taken from the academic paper, <a href="">"Efficient Relational Algebra Algorithms and Data Structures for GPU"</a>.<br />
+<img src="images/stream.png" /><br />
 On the CPU, we implemeneted a simple serial version as well as a parallel version that uses SIMD instructions to improve performance. We felt that it was fair to compare a parallelized implementation on the CPU to a parallelized implementation on the GPU to accurately measure better performance of the operations. The CPU version uses all four cores on the machine by placing pertinent blocks of code in parallel for loops. Each thread checks tuples from the table to see if they are qualifying, and then follows a similar algorithm as in the GPU by performing a prefix sum on the matching indeces of the tuples. This allows for maximum parallelism on the CPU using SIMD.
 <br /><br />
 <h3>JOIN Operation</h3> 
-The JOIN operation is the most complicated algorithm, it is further complicated by the merge stage of the algorithm, which involves identifying subsets of the partitioned relations with overlapping attributes and performing the cross product for each subset. This presents a significant problem to parallel implementations of the algorithm that eventually write to a statically allocated, dense array. 
+The JOIN operation is the most complicated algorithm for SQL operations, and it is further complicated by the merge stage of the algorithm which involves identifying subsets of the partitioned relations with overlapping attributes and performing the cross product for each subset. This presents a significant problem to parallel implementations of the algorithm that eventually writes to a statically allocated, dense array. <br /><br />
 
-We assign threads from the GPU to similar sized blocks from one table and perform a binary search algorithm on the second table to find tuples within the bounds of the block. Once the number of matching tuples is computed, we once again perform a prefix sum operation to find an upper bound for the total number of qualifying tuples from the query. We then merge each tuple with its respective matching tuples and perform another prefix sum on the actual number of qualifying tuples to create a histogram of the final result. Each thread then merges their final results into the final output buffer.<br /><br />
+To improve the efficiency of the algorithm, we first sort the tuples in each table. Similar to the algorithm for SELECT, the GPU then splits up one table into similar sized blocks, and assigns threads to tuples within each block. We then find tuples in the second table that fall in the bounds of each block by performing a p-nary search algorithm on the second table. Once the number of possible matching tuples is computed by multiplying the number of matching tuples in each table, we perform a prefix sum operation on the number of tuples within each block which gives us an upper bound for the total number of qualifying tuples from the query. We then merge each tuple within each block with its respective matching tuples from the second table, and place each joined tuple into the block's condensend output buffer. This gives us the "result size" of each block, and we perform another prefix sum on the result sizes to create a histogram of the final result. Each block then merges their qualifying tuples into the final condensed output buffer.<br /><br />
 <img src="images/join_algo.png" />
 <br /><br />
-The JOIN operation is quite similar on the CPU as on the GPU, we have tried two matching approaches for the first step: binary search and brute force. In brute force, each tuple from the outer relation goes through the entire inner relation, which gives O(M) for every search, where M is the size of the inner relation. In binary search, it is O(logM).
-Since we utilize the fact that the relation is already sorted, binary seatch outperforms the brute force.
+The JOIN operation is quite similar on the CPU as on the GPU. One difference from the algorithm for SELECT is that we must find matching tuples from a second table for each tuple in the first table. To do this, we have tried two matching algorithms: binary search (as in the GPU version) and brute force. In brute force, each tuple from the outer relation goes through the entire inner relation, which gives O(M) time for every search, where M is the size of the inner relation. In binary search, it is O(logM) for every search. Since we want utilize the fact that the relations are already sorted, binary search outperforms the brute force algorithm. Once we find the matching tuples for each tuple in the first table, we perform the merging operation and input the joined tuples directly into the output buffer. Since the CPU executes the JOIN queries using a single thread, we did not need to implement prefix sum or the use of histograms to find the solution. 
 <br /><br />
 
 <br />
@@ -98,7 +99,7 @@ Since we utilize the fact that the relation is already sorted, binary seatch out
 <h4>General CUDA Implementation</h4><br /><br />
 <h4>CUDA Kernels</h4><br /><br />
 <h4>Using Streams</h4>
-<img src="images/stream.png" /><br />
+
 The main overhead is from transferring data, but not that much. we try to explore the potential of hiding the latency by setting up cuda stream. We set up three cuda streams, while stream 0 is doing the computation, stream 1 is transferring data from host to device, stream 2 is transferring data from device to host. So the data transfer bottleneck would be somehow hidden by pipelining.However, the actual execution time of computation is not the same as the time of transferring data, the latency is not completely hidden.<br /><br />
 
 <h3>SELECT on CPU</h3>

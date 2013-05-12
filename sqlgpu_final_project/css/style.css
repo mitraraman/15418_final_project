@@ -243,6 +243,7 @@ img{
     margin-left: auto;
     width: 600px;
     text-align: center;
+    display: block;
 }
 
 /* -------------------------------------------

@@ -130,7 +130,9 @@ The paper is using binary search for each block to find out lower bound and uppe
 The original p-nary algorithm tries to use all of threads cross blocks to find out the matching items, and in our case, we only use all of threads inside one block to find out the boundaries for this block, therefore, we can look for boundaries for all blocks at the same time. Besides, p-nary outputs the items that match, but if there are duplications in the relation, there is no guarantee which one the search will output. For example, if we have 3 consecutive and duplicated keys in the relation, and the search only outputs the position of the middile one for the lower bound of a block, then it would miss the first tuple that can be actually joined, and the correctness of join is violated. Therefore, we makes two versions of p-nary search, one for searching for lower_bound, where we only keep result that has lower index and one for upper_bound, where we only keeps result that has larger index. The reason we do this is to make sure the correctness of join that no tuple is left.
 <br /><br />
 <h3>JOIN on CPU</h3>
-<h4>Single Threaded Implementation</h4><br /><br />
+We only implemented single threaded JOIN ( it is optimized as single threaded) on CPU, becasue we did not come up with an efficient parallel algorithm. We have tried to adopt the same algorithm used in GPU and apply it on CPU via openMP, but the actual performance is even worse than the single threaded version. The problem might be from the memory bandwidth on the host side is not as big as in the GPU.  
+
+<br /><br />
 
 <h3>Implementation Issues</h3>
 <p>

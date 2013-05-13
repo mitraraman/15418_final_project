@@ -146,7 +146,7 @@ We also had to consider limitations in both the CPU and GPU. The GPU itself has 
 <br /><br /><br /><br />
 <h2>Results & Analysis</h2>
 <h3>SELECT Operation</h3>
-Here are the results from SELECT operation executed on CPU and GPU. We executed SELECT on the GPU with CUDA with data transfer (specified as CUDA with no streams), without data transfer (specified as CUDA Kernels), on the GPU using streams, on the CPU using a single thread, and on the CPU implementing SIMD and tasks.<br /><br />
+Here are the results from SELECT operation executed on CPU and GPU. We executed SELECT on the GPU with CUDA with data transfer (specified as CUDA with no streams), without data transfer (specified as CUDA Kernels), on the GPU using streams, on the CPU using a single thread, and on the CPU implementing SIMD and tasks.( CUDA with streams are tested from table size 3 * 2^10 )<br /><br />
 <h4>Performance vs. Table Size</h4>
 <p>
 	These results display the performance speed of each implementation of SELECT on the GPU and CPU on tables with different number of tuples. The time (in milliseconds) is shown on the graph in a logarithmic scale to allow all the data to be represented in the same range.<br /><br /> 

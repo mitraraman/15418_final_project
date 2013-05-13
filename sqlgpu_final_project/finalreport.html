@@ -190,8 +190,6 @@ We can see from our results that executing SELECT operations on the CPU with SIM
 <br />
 
 <h3>GPU or CPU?</h3>
-
-WHAT DO WE THINK?!?!
 <p>From our analysis, we have deduced that executing SELECT and JOIN on the GPU or CPU depends on various other factors, although CUDA with streams and CPU with SIMD parallelization are most optimal from our implementations. Even though we were not able to implement JOIN using streams in CUDA, we can see from our results and analysis that this would improve the performance even more from simple CUDA with data transfer included. Even if we were able to implement JOIN on the CPU using SIMD parallelization, the computation would slow down the execution of the queries and result in worse times than the CUDA implementation. For SELECT operations, if the tables are extremely large then transferring the data from the CPU to the GPU and back may result in a bottleneck effect and slow down the performance. So, since the computation is not as intensive for SELECT queries it will be better to execute them on the CPU with SIMD parallelism.</p>
 </div>
 

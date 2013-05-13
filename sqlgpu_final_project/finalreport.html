@@ -173,21 +173,21 @@ Here are the results from SELECT operation executed on CPU and GPU. We executed 
 
 <h3>Analysis</h3>
 <h4>SELECT Operation</h4>
-<p>We can see from the performance and speedup results that the operation on the GPU without data transfer had the best performance and speedup compared to the CPU single threaded version. However, we must realize that data transfer is an essential part of the real implementation so this does not reflect the real-life situation of SELECT queries implemented on the GPU. Given this information, we know that we should consider the costs of data transfer when analyzing the execution times and speedup. This shows that executing SELECT on the GPU with streams or on the CPU with SIMD and tasks parallelization seem to be the next best options when considering performance time. We can see that implementing SELECT in CUDA with streams shows a performance time of 0 for the two smaller table sizes, and we realized that this is because of the table sizes are so small that when executed in parallel on the GPU, it has a very minimal performance time. This is also the reason for the near to none speedup when compared to the CPU single threaded version for the two smaller table sizes. <br /><br />
+<p>We can see from the performance and speedup results that the operation on the GPU without data transfer had the best performance and speedup compared to the CPU single threaded version. However, we must realize that data transfer is an essential part of the real implementation so this does not reflect the real-life situation of SELECT queries implemented on the GPU. Given this information, we know that we should consider the costs of data transfer when analyzing the execution times and speedup. This shows that executing SELECT on the GPU with streams or on the CPU with SIMD and tasks parallelization seem to be the next best options when considering performance time. We can see that implementing SELECT in CUDA with streams for the two smaller table sizes there is no performance time recorded. This is because the table sizes are too small to see the effects of using streams for the queries. This is also the reason for the near to none speedup when compared to the CPU single threaded version for the two smaller table sizes. <br /><br />
 
 Implementing SELECT in CUDA without streams performed nearly similar to implementing the operation on the CPU with a single thread because, although the algorithm for executing a single query is highly parallelized, the overhead generated from the computation of executing a query slows down the process when executing several queries. This is why implementing streams in CUDA enhanced the performance and speedup, because we were able to speedup the process of analyzing the query, retreiving the tables, and executing the query in a pipelined fashion.
+<br /><br />
+We can see from our results that executing SELECT operations on the CPU with SIMD parallelization performs nearly as well as executing the operation on the GPU with streams. When executing queries on the GPU, there is the additional overhead of transferring the data from the CPU's memory to the GPU. Also, since SELECT queries are not very computation heavy, they do not fully utilize the GPU's power. In the future when we can use machines that have shared memory for the CPU and GPU, it will be better to execute these queries on the GPU. For this project's scope, we have concluded that it is better to execute SELECT operations on the CPU with SIMD parallelization.
 </p>
 
 <br />
 
 <h4>JOIN Operation</h4>
-<p>TO DO ASAP!</p>
+<p>The performance and speedup results of JOIN operations show that the queries performed much better on the GPU than the CPU. As the size of the tables that were being joined increased, the performance of the CPU single threaded version increased more than either implementation on the GPU. We realized that this occured because JOIN queries are much more computation heavy than SELECT queries and the GPU is better suited to compute quickly than the CPU. It is clear from the results of the speedup that queries executed without data transfer had much better speedup than queries executed including data transfer. This is to be expected, as there is overhead whenever data is transferred between the CPU and GPU. Since this is a very common occurence on most machines, the GPU version that includes data transfer is the more realistic implementation. Since the CPU performs much worse than the GPU even with data transfers, we have concluded that it is better to implement JOIN queries on the GPU. Even if the machine enables shared memory between the CPU and GPU, the amount of computation required for each query ensures that the queries would perform better on the GPU than the CPU regardless.</p>
 <br />
 
 <h3>GPU or CPU?</h3>
-
-WHAT DO WE THINK?!?!
-<p>From our analysis, we have deduced that executing SELECT and JOIN on the GPU or CPU depends on various other factors, although CUDA with streams and CPU with SIMD parallelization are most optimal from our implementations. Even though we were not able to implement JOIN using streams in CUDA, we can see from our results and analysis that this would improve the performance even more from simple CUDA with data transfer included. If we were able to implement JOIN on the CPU using SIMD parallelization, this would probably be similar in performance to CUDA with streams, so we are not able to choose a machine for certain. Also, whether we choose to use CPU or GPU will depend mainly on the size of the tables we are accessing and the complexity of the queries. If the tables are extremely large, then transferring the data from the CPU to the GPU and back may result in a bottleneck effect and slow down the performance. Similarly, if the query is extremely complex, then it would be better to take the data transfer costs because the GPU will be able to execute the query more efficiently. </p>
+<p>From our analysis, we have deduced that executing SELECT and JOIN on the GPU or CPU depends on various other factors, although CUDA with streams and CPU with SIMD parallelization are most optimal from our implementations. Even though we were not able to implement JOIN using streams in CUDA, we can see from our results and analysis that this would improve the performance even more from simple CUDA with data transfer included. Even if we were able to implement JOIN on the CPU using SIMD parallelization, the computation would slow down the execution of the queries and result in worse times than the CUDA implementation. For SELECT operations, if the tables are extremely large then transferring the data from the CPU to the GPU and back may result in a bottleneck effect and slow down the performance. So, since the computation is not as intensive for SELECT queries it will be better to execute them on the CPU with SIMD parallelism.</p>
 </div>
 
 <div class="section" id="references">
@@ -245,8 +245,9 @@ WHAT DO WE THINK?!?!
 		<li>Created graphs for each implementation, showing speedup vs. table size</li>
 		<li>Compared speedup and performance of implementations for SELECT and JOIN</li>
 		<li>Performed analysis on CPU vs GPU for SELECT and JOIN</li>
-		<li>Created and designed final project webpage (this one!)</li>
+		<li>Created and designed final project webpage</li>
 		<li>Updated project schedule</li>
+		<li>Created final presentation</li>
 	</ul>
 </div>
 
